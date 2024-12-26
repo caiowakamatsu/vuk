@@ -25,6 +25,24 @@ namespace vuk {
 		std::strong_ordering operator<=>(const ptr_base&) const noexcept = default;
 	};
 
+	template<class T>
+	struct view_base {
+		static constexpr bool value = false;
+	};
+
+	template<class T>
+	constexpr bool is_view = view_base<T>::value;
+
+	struct generic_view_base {
+		uint64_t key;
+
+		explicit operator bool() const noexcept {
+			return key != 0;
+		}
+
+		std::strong_ordering operator<=>(const generic_view_base&) const noexcept = default;
+	};
+
 	struct HandleBase {
 		size_t id = UINT64_MAX;
 	};
@@ -101,13 +119,13 @@ namespace vuk {
 		}
 
 		auto const& operator[](size_t index) const noexcept
-		  requires(std::is_base_of_v<ptr_base, Type> && std::is_array_v<Type::T>)
+		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<Type::T>))
 		{
 			return payload[index];
 		}
 
 		auto& operator[](size_t index) noexcept
-		  requires(std::is_base_of_v<ptr_base, Type> && std::is_array_v<Type::T>)
+		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<Type::T>))
 		{
 			return payload[index];
 		}
@@ -891,10 +909,6 @@ namespace vuk {
 	inline constexpr DescriptorSetStrategyFlags operator^(DescriptorSetStrategyFlagBits bit0, DescriptorSetStrategyFlagBits bit1) noexcept {
 		return DescriptorSetStrategyFlags(bit0) ^ bit1;
 	}
-
-	struct view_base {
-		uint64_t key;
-	};
 
 	struct Node;
 	struct Type;

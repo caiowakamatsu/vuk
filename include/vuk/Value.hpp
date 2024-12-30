@@ -143,15 +143,15 @@ namespace vuk {
 			set_with_extract(get_head(), src.get_head(), 0);
 		}
 
-		Value<uint64_t> get_size()
+		Value<uint64_t> get_size_bytes()
 		  requires std::is_same_v<T, Buffer>
 		{
 			Ref extract = current_module->make_extract(get_head(), 0);
 			return { ExtRef{ std::make_shared<ExtNode>(extract.node, node), extract } };
 		}
 
-		void set_size(Value<uint64_t> arg)
-		  requires std::is_same_v<T, Buffer>
+		void set_size_bytes(Value<uint64_t> arg)
+		  requires std::is_base_of_v<ptr_base, T>
 		{
 			node->deps.push_back(arg.node);
 			current_module->set_value(get_head(), 0, arg.get_head());
@@ -196,10 +196,10 @@ namespace vuk {
 		}
 	};
 
-	template<class T, class... Ctrs>
+	template<class T = void, class... Ctrs>
 	using val_ptr = Value<ptr<T, Ctrs...>>;
 
-	template<class T, class... Ctrs>
+	template<class T = void, class... Ctrs>
 	using val_view = Value<view<T, Ctrs...>>;
 
 	inline Value<uint64_t> operator+(Value<uint64_t> a, uint64_t b) {

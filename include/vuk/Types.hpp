@@ -56,6 +56,21 @@ namespace vuk {
 		}
 	};
 
+	template<class T>
+	struct BufferLike {};
+
+	namespace detail {
+		template<class Tin>
+		struct unwrap {
+			using T = Tin;
+		};
+
+		template<class Tin>
+		struct unwrap<BufferLike<Tin>> {
+			using T = Tin;
+		};
+	} // namespace detail
+
 	template<typename Type>
 	class Unique {
 		Allocator* allocator;
@@ -119,13 +134,13 @@ namespace vuk {
 		}
 
 		auto const& operator[](size_t index) const noexcept
-		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<Type::T>))
+		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<typename detail::unwrap<Type::pointed_T>::T>))
 		{
 			return payload[index];
 		}
 
 		auto& operator[](size_t index) noexcept
-		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<Type::T>))
+		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<typename detail::unwrap<Type::pointed_T>::T>))
 		{
 			return payload[index];
 		}
@@ -647,6 +662,7 @@ namespace vuk {
 	Format srgb_to_unorm(Format) noexcept;
 
 	enum class MemoryUsage {
+		eUnset = 0,
 		eGPUonly = 1 /*VMA_MEMORY_USAGE_GPU_ONLY*/,
 		eCPUtoGPU = 3 /*VMA_MEMORY_USAGE_CPU_TO_GPU*/,
 		eCPUonly = 2 /*VMA_MEMORY_USAGE_CPU_ONLY*/,

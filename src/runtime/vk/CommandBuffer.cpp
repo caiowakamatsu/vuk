@@ -804,8 +804,9 @@ namespace vuk {
 		return *this;
 	}
 
-	CommandBuffer& CommandBuffer::fill_buffer(const Buffer& dst, uint32_t data) {
-		ctx.vkCmdFillBuffer(command_buffer, dst.buffer, dst.offset, dst.size, data);
+	CommandBuffer& CommandBuffer::fill_buffer(const view<BufferLike<byte>>& dst, uint32_t data) {
+		auto& underlying = allocator->get_context().resolve_ptr(dst.ptr).buffer;
+		ctx.vkCmdFillBuffer(command_buffer, underlying.buffer, underlying.offset, dst.size_bytes(), data);
 		return *this;
 	}
 

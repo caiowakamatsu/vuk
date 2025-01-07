@@ -26,12 +26,20 @@ namespace vuk {
 	};
 
 	template<class T>
-	struct view_base {
+	struct is_view_type {
 		static constexpr bool value = false;
 	};
 
 	template<class T>
-	constexpr bool is_view = view_base<T>::value;
+	constexpr bool is_view = is_view_type<T>::value;
+
+	template<class T>
+	struct is_bufferlike_view_type {
+		static constexpr bool value = false;
+	};
+
+	template<class T>
+	constexpr bool is_bufferlike_view = is_bufferlike_view_type<T>::value;
 
 	struct generic_view_base {
 		uint64_t key;
@@ -110,18 +118,18 @@ namespace vuk {
 		}
 
 		Type const& operator*() const noexcept
-		  requires(!std::is_base_of_v<ptr_base, Type>)
+		  //requires(!std::is_base_of_v<ptr_base, Type>)
 		{
 			return payload;
 		}
 
 		Type& operator*() noexcept
-		  requires(!std::is_base_of_v<ptr_base, Type>)
+		  //requires(!std::is_base_of_v<ptr_base, Type>)
 		{
 			return payload;
 		}
 
-		auto const& operator*() const noexcept
+		/* auto const& operator*() const noexcept
 		  requires(std::is_base_of_v<ptr_base, Type>)
 		{
 			return *payload;
@@ -131,16 +139,16 @@ namespace vuk {
 		  requires(std::is_base_of_v<ptr_base, Type>)
 		{
 			return *payload;
-		}
+		}*/
 
 		auto const& operator[](size_t index) const noexcept
-		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<typename detail::unwrap<Type::pointed_T>::T>))
+		  requires(is_view<Type> || std::is_base_of_v<ptr_base, Type>)
 		{
 			return payload[index];
 		}
 
 		auto& operator[](size_t index) noexcept
-		  requires(is_view<Type> || (std::is_base_of_v<ptr_base, Type> && std::is_array_v<typename detail::unwrap<Type::pointed_T>::T>))
+		  requires(is_view<Type> || std::is_base_of_v<ptr_base, Type>)
 		{
 			return payload[index];
 		}
@@ -179,6 +187,13 @@ namespace std {
 			size_t h = 0;
 			hash_combine(h, x.id, reinterpret_cast<uint64_t>(x.payload));
 			return h;
+		}
+	};
+
+	template<>
+	struct hash<vuk::ptr_base> {
+		size_t operator()(vuk::ptr_base const& x) const noexcept {
+			return std::hash<uint64_t>()(x.device_address);
 		}
 	};
 } // namespace std
@@ -974,6 +989,35 @@ namespace vuk {
 		{
 			assert(index < size());
 			return (*ptr)[index];
+		}
+
+		Arg<Buffer<Type>, acc, void> to_view(size_t count) 
+			requires std::is_base_of_v<ptr_base, Type>
+		{
+			return { Buffer<Type>{ ptr, count }, {}, {} };
+		}
+	};
+
+	template<class Type, Access acc>
+	struct Arg<Type, acc, void> {
+		using type = Type;
+		static constexpr Access access = acc;
+
+		Type val;
+
+		Ref src;
+		Ref def;
+
+		operator const Type&() const noexcept
+		  requires(!std::is_array_v<Type>)
+		{
+			return val;
+		}
+
+		const Type* operator->() const noexcept
+		  requires(!std::is_array_v<Type>)
+		{
+			return &val;
 		}
 	};
 } // namespace vuk

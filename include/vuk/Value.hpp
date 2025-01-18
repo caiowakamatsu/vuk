@@ -168,20 +168,6 @@ namespace vuk {
 			set_with_extract(get_head(), src.get_head(), 0);
 		}
 
-		Value<uint64_t> get_size_bytes()
-		  requires std::is_same_v<T, Buffer>
-		{
-			Ref extract = current_module->make_extract(get_head(), 0);
-			return { ExtRef{ std::make_shared<ExtNode>(extract.node, node), extract } };
-		}
-
-		void set_size_bytes(Value<uint64_t> arg)
-		  requires std::is_base_of_v<ptr_base, T>
-		{
-			node->deps.push_back(arg.node);
-			current_module->set_value(get_head(), 0, arg.get_head());
-		}
-
 		auto operator[](size_t index)
 		  requires std::is_array_v<T>
 		{
@@ -219,28 +205,6 @@ namespace vuk {
 			auto vval = Value<view<inner_T>>{ make_ext_ref(imp_view, { node }) };
 			node->deps.push_back(vval.node);
 			return std::move(vval);
-		}
-
-		Value<BufferCreateInfo> def()
-		  requires std::is_base_of_v<ptr_base, T>
-		{
-			auto def_or_v = get_def(get_head());
-			assert(def_or_v && def_or_v->is_ref);
-			auto def = def_or_v->ref;
-
-			return { make_ext_ref({ def.node->allocate.src }) };
-		}
-
-		template<class U = T>
-		void set(U value)
-		  requires(!std::is_same_v<T, void> && !erased_tuple_adaptor<T>::value)
-		{
-			auto def_or_v = *get_def(get_head());
-			if (!def_or_v.is_ref) {
-				*static_cast<T*>(def_or_v.value) = value;
-			}
-			auto def = def_or_v.ref;
-			**eval<T*>(def) = value;
 		}
 	};
 

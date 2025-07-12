@@ -482,14 +482,14 @@ namespace vuk {
 			return nullptr;
 		}
 
-		auto res = allocate_memory(*allocator, { MemoryUsage::eCPUtoGPU, size });
+		auto res = allocate_buffer(*allocator, { MemoryUsage::eCPUtoGPU, size });
 		if (!res) {
 			current_error = std::move(res);
 			return nullptr;
 		} else {
 			auto& buf = res->get();
-			bind_buffer(set, binding, { buf, size });
-			return &*buf;
+			bind_buffer(set, binding, buf);
+			return &buf[0];
 		}
 	}
 
@@ -531,7 +531,7 @@ namespace vuk {
 			return *this;
 		}
 
-		auto res = allocate_memory(*allocator, { MemoryUsage::eCPUtoGPU, commands.size_bytes(), 1 });
+		auto res = allocate_buffer(*allocator, { MemoryUsage::eCPUtoGPU, commands.size_bytes(), 1 });
 		if (!res) {
 			current_error = std::move(res);
 			return *this;
@@ -539,7 +539,7 @@ namespace vuk {
 
 		auto& buf = *res;
 		memcpy(&*buf, commands.data(), commands.size_bytes());
-		auto bo = allocator->get_context().ptr_to_buffer_offset(buf.get());
+		auto bo = allocator->get_context().ptr_to_buffer_offset(buf->ptr);
 		ctx.vkCmdDrawIndirect(command_buffer, bo.buffer, (uint32_t)bo.offset, (uint32_t)commands.size(), sizeof(DrawIndirectCommand));
 		return *this;
 	}
@@ -587,7 +587,7 @@ namespace vuk {
 			return *this;
 		}
 
-		auto res = allocate_memory(*allocator, { MemoryUsage::eCPUtoGPU, cmds.size_bytes(), 1 });
+		auto res = allocate_buffer(*allocator, { MemoryUsage::eCPUtoGPU, cmds.size_bytes(), 1 });
 		if (!res) {
 			current_error = std::move(res);
 			return *this;
@@ -595,7 +595,7 @@ namespace vuk {
 
 		auto& buf = *res;
 		memcpy(&*buf, cmds.data(), cmds.size_bytes());
-		auto bo = allocator->get_context().ptr_to_buffer_offset(buf.get());
+		auto bo = allocator->get_context().ptr_to_buffer_offset(buf->ptr);
 		ctx.vkCmdDrawIndexedIndirect(command_buffer, bo.buffer, (uint32_t)bo.offset, (uint32_t)cmds.size(), sizeof(DrawIndexedIndirectCommand));
 		return *this;
 	}
@@ -673,14 +673,14 @@ namespace vuk {
 		if (!_bind_compute_pipeline_state()) {
 			return *this;
 		}
-		auto res = allocate_memory(*allocator, { MemoryUsage::eCPUtoGPU, cmds.size_bytes(), 1 });
+		auto res = allocate_buffer(*allocator, { MemoryUsage::eCPUtoGPU, cmds.size_bytes(), 1 });
 		if (!res) {
 			current_error = std::move(res);
 			return *this;
 		}
 		auto& buf = *res;
 		memcpy(&*buf, cmds.data(), cmds.size_bytes());
-		auto bo = allocator->get_context().ptr_to_buffer_offset(buf.get());
+		auto bo = allocator->get_context().ptr_to_buffer_offset(buf->ptr);
 		ctx.vkCmdDispatchIndirect(command_buffer, bo.buffer, bo.offset);
 		return *this;
 	}
